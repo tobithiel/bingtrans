@@ -5,7 +5,7 @@ import urllib
 import codecs
 import json
 
-api_url = "http://api.microsofttranslator.com/V2/Ajax.svc/Translate"
+api_url = "http://api.microsofttranslator.com/V2/Ajax.svc/"
 app_id = ''
 
 def _unicode_urlencode(params):
@@ -17,12 +17,12 @@ def _unicode_urlencode(params):
         params = params.items()
     return urllib.urlencode([(k, isinstance(v, unicode) and v.encode('utf-8') or v) for k, v in params])
 
-def _run_query(args):
+def _run_query(method,args):
 	"""
 	takes arguments and optional language argument and runs query on server
 	"""
 	data = _unicode_urlencode(args)
-	sock = urllib.urlopen(api_url + '?' + data)
+	sock = urllib.urlopen(api_url + method + '?' + data)
 	result = sock.read()
 	if result.startswith(codecs.BOM_UTF8):
 		result = result.lstrip(codecs.BOM_UTF8).decode('utf-8')
@@ -36,12 +36,15 @@ def set_app_id(new_app_id):
 	global app_id
 	app_id = new_app_id
 
+def check_app_id():
+    if not app_id:
+        raise ValueError("AppId needs to be set by set_app_id")
+
 def translate(text, source, target, html=False):
 	"""
 	action=opensearch
 	"""
-	if not app_id:
-		raise ValueError("AppId needs to be set by set_app_id")
+	check_app_id()
 	query_args = {
 		'appId': app_id,
 		'text': text,
@@ -50,4 +53,12 @@ def translate(text, source, target, html=False):
 		'contentType': 'text/plain' if not html else 'text/html',
 		'category': 'general'
 	}
-	return _run_query(query_args)
+	return _run_query('Translate', query_args)
+
+def detect(text):
+    check_app_id()
+    query_args = {
+        'appId': app_id,
+        'text': text
+    }
+    return _run_query('Detect', query_args)
